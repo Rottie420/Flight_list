@@ -1,20 +1,24 @@
 '''
-import os
-os.system("pip install selenium==3.141.0")
-os.system('pip install pandas')
-os.system('pip install beautifulsoup4')
+    This is the main script for the package.
+    os.system("pip install selenium==3.141.0")
+    os.system('pip install pandas')
+    os.system('pip install beautifulsoup4')
 '''
+
+import os
+import smtplib
+import pandas as pd
+import datetime
+
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from time import sleep
-import smtplib
-import pandas as pd
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import datetime
+
 
 search = "http://www.icargo.net/icargo/do/searchFlight"
 edge_options = Options()
@@ -25,16 +29,11 @@ driver.get(search)
 deplist = []
 arrlist = []
 time_format = '%H:%M'
-username = 'sqarrdep@gmail.com'
-password = 'txtx dwgh yovt goth'
-mail_from = 'sqarrdep@gmail.com'
 
-mail_to = [
-    'szeleon_tee@sats.com.sg', 'sekar_nagaraj01@sats.com.sg',
-    'kevin_castillo@sats.com.sg', 'jefferson_torres@sats.com.sg',
-    'sri_rao@sats.com.sg', 'gilberto_david@sats.com.sg',
-    'muhammadaliff_ahmad@sats.com.sg'
-]
+username = os.environ['USER_NAME']
+password = os.environ['PASSWORD']
+mail_from = os.environ['MAIL_FROM']
+mail_to = os.environ['MAIL_TO']
 
 arr_flights = [
     '517', '535', '523', '441', '537', '103', '949', '991', '131', '105', 
@@ -198,17 +197,17 @@ def arr_mail_list():
 if __name__ == '__main__':
   while True:
     try:
-      dep_list()
+      print(f'{get_current_time()} : Checking flights...')
       deplist = convert_list(data=deplist)
-      print(deplist)
+      arrlist = convert_list(data=arrlist)
+      dep_list()
       dep_mail_list()
       arr_list()
-      arrlist = convert_list(data=arrlist)
-      print(arrlist)
       arr_mail_list()
       print(deplist)
       deplist.clear()
       arrlist.clear()
+      print(f'{get_current_time()} : Flight list was updated...')
       sleep(3600)
     except Exception as e:
       print(e)
