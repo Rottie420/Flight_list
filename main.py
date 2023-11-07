@@ -1,33 +1,37 @@
 '''
-import os
 os.system("pip install selenium==3.141.0")
 os.system('pip install pandas')
 os.system('pip install beautifulsoup4')
 '''
+
+import os
+import smtplib
+import pandas as pd
+import datetime
+
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from time import sleep
-import smtplib
-import pandas as pd
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import datetime
+
 
 search = "http://www.icargo.net/icargo/do/searchFlight"
 edge_options = Options()
 edge_options.add_argument('--no-sandbox')
 edge_options.add_argument('--disable-dev-shm-usage')
+edge_options.add_argument('--headless')
 driver = webdriver.Chrome(options=edge_options)
 driver.get(search)
 deplist = []
 arrlist = []
 time_format = '%H:%M'
-username = 'sqarrdep@gmail.com'
-password = 'txtx dwgh yovt goth'
-mail_from = 'sqarrdep@gmail.com'
+username = os.environ['USER_NAME']
+password = os.environ['PASSWORD']
+mail_from = os.environ['MAIL_FROM']
 
 mail_to = [
     'szeleon_tee@sats.com.sg', 'sekar_nagaraj01@sats.com.sg',
@@ -49,7 +53,7 @@ dep_flights = [
     '164', '148', '508', '172', '106', '108', '134', '728', '432', '156',
     '906', '114', '166', '174', '194', '116', '138', '118', '736', '158',
     '928', '740', '442', '142', '994', '522', '516', '534', '948', '536', 
-    '616', '136', '980', '926', '724', '900', '728', '184' 
+    '616', '136', '980', '926', '724', '900', '184' 
 ]
 
 
@@ -115,6 +119,9 @@ def dep_list():
       if any(aircraft_type == types for types in types):
         deplist.append(result)
         sleep(1)
+
+      print(f'{get_current_time()} : {result}')
+      
     except Exception:
       pass
 
@@ -157,6 +164,8 @@ def arr_list():
       if any(aircraft_type == types for types in types):
         arrlist.append(result)
         sleep(1)
+        print(f'{get_current_time()} : {result}')
+        
     except Exception:
       pass
 
@@ -198,17 +207,16 @@ def arr_mail_list():
 if __name__ == '__main__':
   while True:
     try:
+      print(f'{get_current_time()} : downloading flights...')
       dep_list()
       deplist = convert_list(data=deplist)
-      print(deplist)
       dep_mail_list()
       arr_list()
       arrlist = convert_list(data=arrlist)
-      print(arrlist)
       arr_mail_list()
-      print(deplist)
       deplist.clear()
       arrlist.clear()
+      print(f'{get_current_time()} : download completed...')
       sleep(3600)
     except Exception as e:
       print(e)
