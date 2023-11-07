@@ -57,12 +57,15 @@ dep_flights = [
 ]
 
 
-def get_current_time(f='%Y-%b-%d %H:%M'):
+def get_formatted_time():
   format_time = datetime.datetime.now() + datetime.timedelta(hours=8)
   current_time = format_time.strftime('%H:%M')
   current_day = format_time.strftime('%d')
   current_month = format_time.strftime('%b')
   return current_time, current_day, current_month
+
+def get_current_time(f='%Y-%b-%d %H:%M:%S'):
+  return (datetime.datetime.now() + datetime.timedelta(hours=8)).strftime(f)
 
 
 def convert_list(data):
@@ -82,7 +85,7 @@ def convert_list(data):
 def dep_list():
   for i in dep_flights:
     try:
-      time_, day_, mth_ = get_current_time()
+      time_, day_, mth_ = get_formatted_time()
       driver.get(search)
       input_box_1 = driver.find_element(
           By.XPATH,
@@ -129,7 +132,7 @@ def dep_list():
 def arr_list():
   for i in arr_flights:
     try:
-      time_, day_, mth_ = get_current_time()
+      time_, day_, mth_ = get_formatted_time()
       driver.get(search)
       input_box_1 = driver.find_element(
           By.XPATH,
