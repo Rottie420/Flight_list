@@ -1,3 +1,4 @@
+#thi is the only package version working on replit
 '''
 os.system("pip install selenium==3.141.0")
 os.system('pip install pandas')
@@ -16,6 +17,7 @@ from selenium.webdriver.common.keys import Keys
 from time import sleep
 from flask import Flask, render_template
 
+app = Flask(__name__, template_folder='templates', static_folder='static')
 search = "http://www.icargo.net/icargo/do/searchFlight"
 edge_options = Options()
 edge_options.add_argument('--no-sandbox')
@@ -27,6 +29,7 @@ deplist = []
 arrlist = []
 time_format = '%H:%M'
 
+#list of Singapore Airlines NB flights
 arr_flights = [
     '517', '535', '523', '441', '537', '103', '949', '991', '131', '105',
     '107', '153', '725', '935', '133', '615', '147', '163', '727', '761',
@@ -35,6 +38,7 @@ arr_flights = [
     '739', '135', '981', '927', '723', '731', '901', '519', '183'
 ]
 
+#list of Singapore Airlines NB flights
 dep_flights = [
     '934', '104', '154', '524', '990', '762', '132', '726', '251', '203',
     '164', '148', '508', '172', '106', '108', '134', '728', '432', '156',
@@ -43,7 +47,7 @@ dep_flights = [
     '616', '136', '980', '926', '724', '900', '184'
 ]
 
-
+#formatted time need for scrapping data
 def get_formatted_time():
   format_time = datetime.datetime.now() + datetime.timedelta(hours=8)
   current_time = format_time.strftime('%H:%M')
@@ -51,11 +55,11 @@ def get_formatted_time():
   current_month = format_time.strftime('%b')
   return current_time, current_day, current_month
 
-
+#formatted time converted to SG timezone.
 def get_current_time(f='%Y-%b-%d %H:%M:%S'):
   return (datetime.datetime.now() + datetime.timedelta(hours=8)).strftime(f)
 
-
+#convert list to dataframe to format and sort.
 def convert_list(data):
   df = pd.DataFrame(data)
   df[['Flight', 'No.', 'STD', 'Time', 'Bay']] = df[0].str.split(' ',
@@ -69,7 +73,7 @@ def convert_list(data):
   lst = df['string'].tolist()
   return lst
 
-
+#scrapping departure list data.
 def dep_list():
   for i in dep_flights:
     try:
@@ -90,7 +94,8 @@ def dep_list():
       input_box_2.send_keys(Keys.ENTER)
       html_source = driver.page_source
       soup = BeautifulSoup(html_source, "html.parser")
-
+      
+      #flight 906 has a different layout.
       if i == '906':
         flight_status = soup.find_all('td', class_='bdCellText')[22]
         flight_bay = soup.find_all('td', class_='bdCellText')[33]
@@ -104,7 +109,8 @@ def dep_list():
       flight_status = flight_status.replace(f'{day_} {mth_} 2023 /', '')
       flight_bay = flight_bay.text.strip()
       result = f'SQ {i} STD{flight_status} {flight_bay}'
-
+      
+      #filter flights to NB aircrafts type.
       types = ['B738', 'B38M']
       aircraft_type = aircraft_type.text.strip()
       if any(aircraft_type == types for types in types):
@@ -114,7 +120,7 @@ def dep_list():
     except Exception:
       pass
 
-
+#scrapping arrivals list data.
 def arr_list():
   for i in arr_flights:
     try:
@@ -136,6 +142,7 @@ def arr_list():
       html_source = driver.page_source
       soup = BeautifulSoup(html_source, "html.parser")
 
+      #flight 906 has a different layout.
       if i == '906':
         aircraft_type = soup.find_all('td', class_='bdCellText')[31]
       else:
@@ -148,6 +155,7 @@ def arr_list():
       flight_bay = flight_bay.text.strip()
       result = f'SQ {i} STA{flight_status} {flight_bay}'
 
+      #filter flights to NB aircrafts type.
       types = ['B738', 'B38M']
       aircraft_type = aircraft_type.text.strip()
       if any(aircraft_type == types for types in types):
@@ -156,9 +164,6 @@ def arr_list():
 
     except Exception:
       pass
-
-
-app = Flask(__name__, template_folder='templates', static_folder='static')
 
 
 @app.route("/")
