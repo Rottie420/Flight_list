@@ -9,7 +9,19 @@
       
     </head>
     <body>
-        <h4><a href="/start">Flight list viewer</a></h4>
-     
+        <h4>Departures {{ time }}</h4>
+        <table>
+              {% for row in dep %}
+              <tr><td>{{ row }}</td></tr>
+              {% endfor %}
+        </table>
+
+        <h4>Arrivals {{ time }}</h4>
+        <table>
+              {% for row in arr %}
+              <tr><td>{{ row }}</td></tr>
+              {% endfor %}
+        </table>
+
     </body>
 </html>

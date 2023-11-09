@@ -4,10 +4,9 @@ os.system('pip install pandas')
 os.system('pip install beautifulsoup4')
 '''
 
-import os
-import smtplib
 import pandas as pd
 import datetime
+import random
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -15,9 +14,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from time import sleep
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
+from flask import Flask, render_template
 
 search = "http://www.icargo.net/icargo/do/searchFlight"
 edge_options = Options()
@@ -29,31 +26,21 @@ driver.get(search)
 deplist = []
 arrlist = []
 time_format = '%H:%M'
-username = os.environ['USER_NAME']
-password = os.environ['PASSWORD']
-mail_from = os.environ['MAIL_FROM']
-
-mail_to = [
-    'szeleon_tee@sats.com.sg', 'sekar_nagaraj01@sats.com.sg',
-    'kevin_castillo@sats.com.sg', 'jefferson_torres@sats.com.sg',
-    'sri_rao@sats.com.sg', 'gilberto_david@sats.com.sg',
-    'muhammadaliff_ahmad@sats.com.sg'
-]
 
 arr_flights = [
-    '517', '535', '523', '441', '537', '103', '949', '991', '131', '105', 
+    '517', '535', '523', '441', '537', '103', '949', '991', '131', '105',
     '107', '153', '725', '935', '133', '615', '147', '163', '727', '761',
     '113', '171', '155', '525', '115', '252', '509', '117', '137', '165',
-    '173', '431', '735', '157', '929', '995', '906', '141', '193', '204', 
-    '739', '135', '981', '927', '723', '731', '901', '519', '183' 
+    '173', '431', '735', '157', '929', '995', '906', '141', '193', '204',
+    '739', '135', '981', '927', '723', '731', '901', '519', '183'
 ]
 
 dep_flights = [
     '934', '104', '154', '524', '990', '762', '132', '726', '251', '203',
     '164', '148', '508', '172', '106', '108', '134', '728', '432', '156',
     '906', '114', '166', '174', '194', '116', '138', '118', '736', '158',
-    '928', '740', '442', '142', '994', '522', '516', '534', '948', '536', 
-    '616', '136', '980', '926', '724', '900', '184' 
+    '928', '740', '442', '142', '994', '522', '516', '534', '948', '536',
+    '616', '136', '980', '926', '724', '900', '184'
 ]
 
 
@@ -63,6 +50,7 @@ def get_formatted_time():
   current_day = format_time.strftime('%d')
   current_month = format_time.strftime('%b')
   return current_time, current_day, current_month
+
 
 def get_current_time(f='%Y-%b-%d %H:%M:%S'):
   return (datetime.datetime.now() + datetime.timedelta(hours=8)).strftime(f)
@@ -123,8 +111,6 @@ def dep_list():
         deplist.append(result)
         sleep(1)
 
-      print(f'{get_current_time()} : {result}')
-      
     except Exception:
       pass
 
@@ -167,60 +153,27 @@ def arr_list():
       if any(aircraft_type == types for types in types):
         arrlist.append(result)
         sleep(1)
-        print(f'{get_current_time()} : {result}')
-        
+
     except Exception:
       pass
 
 
-def dep_mail_list():
-  mail_subject = f'DEP FLIGHTS'
-  dep_list_msg = '\n'.join(deplist)
-  mail_body = dep_list_msg
-  msg = MIMEMultipart()
-  msg['From'] = username
-  msg['To'] = ', '.join(mail_to)
-  msg['Subject'] = mail_subject
-  msg.attach(MIMEText(mail_body, 'plain'))
-  text = msg.as_string()
-  connection = smtplib.SMTP('smtp.gmail.com')
-  connection.starttls()
-  connection.login(username, password)
-  connection.sendmail(mail_from, mail_to, text)
-  connection.quit()
+app = Flask(__name__, template_folder='templates', static_folder='static')
 
 
-def arr_mail_list():
-  mail_subject = f'ARR FLIGHTS'
-  arr_list_msg = '\n'.join(arrlist)
-  mail_body = arr_list_msg
-  msg = MIMEMultipart()
-  msg['From'] = username
-  msg['To'] = ', '.join(mail_to)
-  msg['Subject'] = mail_subject
-  msg.attach(MIMEText(mail_body, 'plain'))
-  text = msg.as_string()
-  connection = smtplib.SMTP('smtp.gmail.com')
-  connection.starttls()
-  connection.login(username, password)
-  connection.sendmail(mail_from, mail_to, text)
-  connection.quit()
+@app.route("/")
+def home():
+  return render_template('index.html',
+                         dep=convert_list(deplist),
+                         arr=convert_list(arrlist),
+                         time=get_current_time())
 
 
 if __name__ == '__main__':
   while True:
-    try:
-      print(f'{get_current_time()} : downloading flights...')
-      dep_list()
-      deplist = convert_list(data=deplist)
-      dep_mail_list()
-      arr_list()
-      arrlist = convert_list(data=arrlist)
-      arr_mail_list()
-      deplist.clear()
-      arrlist.clear()
-      print(f'{get_current_time()} : download completed...')
-      sleep(3600)
-    except Exception as e:
-      print(e)
-      pass
+    deplist.clear()
+    arrlist.clear()
+    dep_list()
+    arr_list()
+    app.run(host='0.0.0.0', port=random.randint(2000, 9000))
+    sleep(3600)
