@@ -1,4 +1,4 @@
-#thi is the only package version working on replit
+#this is the only package version working on replit.
 '''
 os.system("pip install selenium==3.141.0")
 os.system('pip install pandas')
@@ -32,25 +32,26 @@ deplist = []
 arrlist = []
 time_format = '%H:%M'
 
-#list of Singapore Airlines NB flights
+#list of Singapore Airlines NB flights.
 arr_flights = [
-    '517', '535', '523', '441', '537', '103', '949', '991', '131', '105', 
+    '517', '535', '523', '441', '537', '103', '949', '991', '131', '105',
     '107', '153', '725', '935', '133', '615', '147', '163', '727', '761',
     '113', '171', '155', '525', '115', '252', '509', '117', '137', '165',
-    '173', '431', '735', '157', '929', '995', '906', '141', '193', '204', 
-    '739', '135', '981', '927', '723', '731', '901', '519', '183' 
+    '173', '431', '735', '157', '929', '995', '906', '141', '193', '204',
+    '739', '135', '981', '927', '723', '731', '901', '519', '183'
 ]
 
-#list of Singapore Airlines NB flights
+#list of Singapore Airlines NB flights.
 dep_flights = [
     '934', '104', '154', '524', '990', '762', '132', '726', '251', '203',
     '164', '148', '508', '172', '106', '108', '134', '728', '432', '156',
     '906', '114', '166', '174', '194', '116', '138', '118', '736', '158',
-    '928', '740', '442', '142', '994', '522', '516', '534', '948', '536', 
-    '616', '136', '980', '926', '724', '900', '184' 
+    '928', '740', '442', '142', '994', '522', '516', '534', '948', '536',
+    '616', '136', '980', '926', '724', '900', '184'
 ]
 
-#formatted time need for scrapping data
+
+#formatted time need for scrapping data.
 def get_formatted_time():
   format_time = datetime.datetime.now() + datetime.timedelta(hours=8)
   current_time = format_time.strftime('%H:%M')
@@ -58,17 +59,32 @@ def get_formatted_time():
   current_month = format_time.strftime('%b')
   return current_time, current_day, current_month
 
+
 #formatted time converted to SG timezone.
 def get_current_time(f='%Y-%b-%d %H:%M:%S'):
   return (datetime.datetime.now() + datetime.timedelta(hours=8)).strftime(f)
 
+
+#will return true if newday.
+def new_day():
+  new_day = '00:15:00'
+  date_now = (datetime.datetime.now() +
+              datetime.timedelta(hours=8)).strftime('%H:%M:%S')
+
+  if date_now < new_day:
+    return True
+
+  else:
+    return False
+
+
 #convert list to dataframe to format and sort.
 def convert_list(data):
   df = pd.DataFrame(data)
-  
+
   if df.empty:
     return data
-    
+
   else:
     df[['Flight', 'No.', 'STD', 'Time', 'Bay']] = df[0].str.split(' ',
                                                                   expand=True)
@@ -78,12 +94,17 @@ def convert_list(data):
     df['Time'] = df['Time'].apply(lambda row: row.strftime(time_format))
     df = df.sort_values(by='Time', ascending=True)
     df['string'] = df.apply(lambda row: ' '.join(row), axis=1)
-    df.drop(columns=['Flight', 'No.', 'STD', 'Time', 'Bay'], inplace=True)  
+    df.drop(columns=['Flight', 'No.', 'STD', 'Time', 'Bay'], inplace=True)
     sorted_data = df['string'].tolist()
     return sorted_data
 
+
 #scrapping departure list data.
 def dep_list():
+  #clear list if newday return us true.
+  if new_day():
+    deplist.clear()
+
   for i in dep_flights:
     try:
       time_, day_, mth_ = get_formatted_time()
@@ -103,7 +124,7 @@ def dep_list():
       input_box_2.send_keys(Keys.ENTER)
       html_source = driver.page_source
       soup = BeautifulSoup(html_source, "html.parser")
-      
+
       #flight 906 has a different layout.
       if i == '906':
         flight_status = soup.find_all('td', class_='bdCellText')[22]
@@ -118,7 +139,7 @@ def dep_list():
       flight_status = flight_status.replace(f'{day_} {mth_} 2023 /', '')
       flight_bay = flight_bay.text.strip()
       result = f'SQ {i} STD{flight_status} {flight_bay}'
-      
+
       #filter flights to NB aircrafts type.
       types = ['B738', 'B38M']
       aircraft_type = aircraft_type.text.strip()
@@ -126,11 +147,20 @@ def dep_list():
         deplist.append(result)
         sleep(1)
 
-    except Exception:
+    #log errors to logs.txt.
+    except Exception as e:
+      f = open('logs.txt', 'a')
+      f.write(f'{get_current_time()} [Error]: {e}\n')
+      f.close()
       pass
+
 
 #scrapping arrivals list data.
 def arr_list():
+  #clear list if newday return us true.
+  if new_day():
+    arrlist.clear()
+
   for i in arr_flights:
     try:
       time_, day_, mth_ = get_formatted_time()
@@ -171,31 +201,48 @@ def arr_list():
         arrlist.append(result)
         sleep(1)
 
-    except Exception:
+    #log errors to logs.txt.
+    except Exception as e:
+      f = open('logs.txt', 'a')
+      f.write(f'{get_current_time()} [Error]: {e}\n')
+      f.close()
       pass
 
 
+#real-time data update.
 def update_data():
   while True:
-      socketio.emit('update', {'data': [dep_list(), arr_list()]})
-
-@app.route("/")
-def home():
-  
-  return render_template('index.html',
-                         dep=convert_list(deplist), 
-                         arr=convert_list(arrlist),
-                         time=get_current_time())
-  
-
-@socketio.on('connect')
-def handle_connect():
     socketio.emit('update', {'data': [dep_list(), arr_list()]})
 
+
+#home page
+@app.route("/")
+def home():
+
+  return render_template('index.html',
+                         dep=convert_list(deplist),
+                         arr=convert_list(arrlist),
+                         time=get_current_time())
+
+
+#socketio api
+@socketio.on('connect')
+def handle_connect():
+  socketio.emit('update', {'data': [dep_list(), arr_list()]})
+
+
+#main function
 if __name__ == '__main__':
-  update_thread = Thread(target=update_data)
-  update_thread.daemon = True
-  update_thread.start()
-  
-  socketio.run(app, host='0.0.0.0', port=random.randint(2000, 9000))
-   
+  try:
+    update_thread = Thread(target=update_data)
+    update_thread.daemon = True
+    update_thread.start()
+
+    socketio.run(app, host='0.0.0.0', port=random.randint(2000, 9000))
+
+  #log errors to logs.txt.
+  except Exception as e:
+    f = open('logs.txt', 'a')
+    f.write(f'{get_current_time()} [Error]: {e}\n')
+    f.close()
+    pass
