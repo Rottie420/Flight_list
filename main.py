@@ -16,8 +16,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from time import sleep
 from flask import Flask, render_template
+from flask_socketio import SocketIO
+from threading import Thread
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+socketio = SocketIO(app)
 search = "http://www.icargo.net/icargo/do/searchFlight"
 edge_options = Options()
 edge_options.add_argument('--no-sandbox')
@@ -31,11 +34,11 @@ time_format = '%H:%M'
 
 #list of Singapore Airlines NB flights
 arr_flights = [
-    '517', '535', '523', '441', '537', '103', '949', '991', '131', '105',
+    '517', '535', '523', '441', '537', '103', '949', '991', '131', '105', 
     '107', '153', '725', '935', '133', '615', '147', '163', '727', '761',
     '113', '171', '155', '525', '115', '252', '509', '117', '137', '165',
-    '173', '431', '735', '157', '929', '995', '906', '141', '193', '204',
-    '739', '135', '981', '927', '723', '731', '901', '519', '183'
+    '173', '431', '735', '157', '929', '995', '906', '141', '193', '204', 
+    '739', '135', '981', '927', '723', '731', '901', '519', '183' 
 ]
 
 #list of Singapore Airlines NB flights
@@ -43,8 +46,8 @@ dep_flights = [
     '934', '104', '154', '524', '990', '762', '132', '726', '251', '203',
     '164', '148', '508', '172', '106', '108', '134', '728', '432', '156',
     '906', '114', '166', '174', '194', '116', '138', '118', '736', '158',
-    '928', '740', '442', '142', '994', '522', '516', '534', '948', '536',
-    '616', '136', '980', '926', '724', '900', '184'
+    '928', '740', '442', '142', '994', '522', '516', '534', '948', '536', 
+    '616', '136', '980', '926', '724', '900', '184' 
 ]
 
 #formatted time need for scrapping data
@@ -62,16 +65,22 @@ def get_current_time(f='%Y-%b-%d %H:%M:%S'):
 #convert list to dataframe to format and sort.
 def convert_list(data):
   df = pd.DataFrame(data)
-  df[['Flight', 'No.', 'STD', 'Time', 'Bay']] = df[0].str.split(' ',
-                                                                expand=True)
-  df.drop(columns=0, inplace=True)
-  df['Time'] = pd.to_datetime(df['Time'], format=time_format)
-  df['Time'] = df['Time'].apply(lambda row: row.strftime(time_format))
-  df = df.sort_values(by='Time', ascending=True)
-  df['string'] = df.apply(lambda row: ' '.join(row), axis=1)
-  df.drop(columns=['Flight', 'No.', 'STD', 'Time', 'Bay'], inplace=True)
-  lst = df['string'].tolist()
-  return lst
+  
+  if df.empty:
+    return data
+    
+  else:
+    df[['Flight', 'No.', 'STD', 'Time', 'Bay']] = df[0].str.split(' ',
+                                                                  expand=True)
+    df.drop_duplicates(subset='No.', keep='last', inplace=True)
+    df.drop(columns=0, inplace=True)
+    df['Time'] = pd.to_datetime(df['Time'], format=time_format)
+    df['Time'] = df['Time'].apply(lambda row: row.strftime(time_format))
+    df = df.sort_values(by='Time', ascending=True)
+    df['string'] = df.apply(lambda row: ' '.join(row), axis=1)
+    df.drop(columns=['Flight', 'No.', 'STD', 'Time', 'Bay'], inplace=True)  
+    sorted_data = df['string'].tolist()
+    return sorted_data
 
 #scrapping departure list data.
 def dep_list():
@@ -166,19 +175,27 @@ def arr_list():
       pass
 
 
+def update_data():
+  while True:
+      socketio.emit('update', {'data': [dep_list(), arr_list()]})
+
 @app.route("/")
 def home():
+  
   return render_template('index.html',
-                         dep=convert_list(deplist),
+                         dep=convert_list(deplist), 
                          arr=convert_list(arrlist),
                          time=get_current_time())
+  
 
+@socketio.on('connect')
+def handle_connect():
+    socketio.emit('update', {'data': [dep_list(), arr_list()]})
 
 if __name__ == '__main__':
-  while True:
-    deplist.clear()
-    arrlist.clear()
-    dep_list()
-    arr_list()
-    app.run(host='0.0.0.0', port=random.randint(2000, 9000))
-    sleep(3600)
+  update_thread = Thread(target=update_data)
+  update_thread.daemon = True
+  update_thread.start()
+  
+  socketio.run(app, host='0.0.0.0', port=random.randint(2000, 9000))
+   

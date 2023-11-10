@@ -6,22 +6,42 @@
         <title>home</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">                                     
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.js"></script>
     </head>
     <body>
         <h4>Departures {{ time }}</h4>
-        <table>
-              {% for row in dep %}
-              <tr><td>{{ row }}</td></tr>
+
+        <table id="todo-list">
+              {% for task in dep %}
+              <tr><td>{{ task }}</td></tr>
               {% endfor %}
         </table>
 
         <h4>Arrivals {{ time }}</h4>
-        <table>
-              {% for row in arr %}
-              <tr><td>{{ row }}</td></tr>
+
+        <table id="todo-list">
+              {% for task in arr %}
+              <tr><td>{{ task }}</td></tr>
               {% endfor %}
         </table>
+        
+        
+        <script>
+            var socket = io.connect('http://' + document.domain + ':' + location.port);
 
+            socket.on('update', function(data) {
+                var todoList = document.getElementById('todo-list');
+                todoList.innerHTML = '';  // Clear the current list
+
+                data.data.forEach(function(task) {
+                    var listItem = document.createElement('td');
+                    listItem.textContent = task;
+                    todoList.appendChild(listItem);
+                });
+            });
+        </script>
+
+
+          
     </body>
 </html>
