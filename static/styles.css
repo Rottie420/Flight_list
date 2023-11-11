@@ -8,10 +8,6 @@ body {
     padding: 0;
 }
 
-h4 {
-    margin-top: 10px;
-}
-
 table {
     margin-top: 1px;
     font-family: monospace;
@@ -21,4 +17,12 @@ table {
     border-radius: 0;
     overflow: auto;
     line-height: 1.2;
+}
+
+#header {
+    background-color: #2a5885;
+    font-family: monospace;
+    font-size: 14px;
+    color: #fff;
+    padding-left: 5px;
 }
