@@ -147,11 +147,7 @@ def dep_list():
         deplist.append(result)
         sleep(1)
 
-    #log errors to logs.txt.
-    except Exception as e:
-      f = open('logs.txt', 'a')
-      f.write(f'{get_current_time()} [Error]: {e}\n')
-      f.close()
+    except Exception:
       pass
 
 
@@ -201,11 +197,7 @@ def arr_list():
         arrlist.append(result)
         sleep(1)
 
-    #log errors to logs.txt.
-    except Exception as e:
-      f = open('logs.txt', 'a')
-      f.write(f'{get_current_time()} [Error]: {e}\n')
-      f.close()
+    except Exception:
       pass
 
 
@@ -229,6 +221,15 @@ def home():
 @socketio.on('connect')
 def handle_connect():
   socketio.emit('update', {'data': [dep_list(), arr_list()]})
+
+
+# Handles the default namespace
+@socketio.on_error()       
+def error_handler(e):
+  f = open('logs.txt', 'a')
+  f.write(f'{get_current_time()} [Error]: {e}\n')
+  f.close()
+  pass
 
 
 #main function
