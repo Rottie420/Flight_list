@@ -220,7 +220,7 @@ def home():
 #socketio api
 @socketio.on('connect')
 def handle_connect():
-  socketio.emit('update', {'data': [dep_list(), arr_list()]})
+  socketio.emit('update', {'data': [deplist, arrlist]})
 
 
 # Handles the default namespace
